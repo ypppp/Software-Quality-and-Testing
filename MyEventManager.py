@@ -21,6 +21,10 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+from tkinter import *
+from tkcalendar import Calendar
+from datetime import datetime
+from time import strftime
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
@@ -68,9 +72,50 @@ def get_upcoming_events(api, starting_time, number_of_events):
     return events_result.get('items', [])
 
 
+def openForm():
+    newWind = Toplevel(tk)
+    newWind.title("Create Event")
+    newWind.geometry("500x500")
+
+def clock():
+    string = strftime('%H:%M:%S %p')
+    timelbl.config(text = "Current Time: " + string, font='bold')
+    timelbl.after(1000, clock)
+
+tk = Tk()
+
+tk.geometry("700x700")
+tk.title("MyEventManager")
+
+currentDay = datetime.now().day
+currentMonth = datetime.now().month
+currentYear = datetime.now().year
+cal = Calendar(tk, selectmode = 'day', year = currentYear, month = currentMonth, day = currentDay)
+cal.pack(pady = 20, fill = "both", expand = True)
+
+api = get_calendar_api()
+time_now = datetime.utcnow().isoformat() + 'Z'
+events = get_upcoming_events(api, time_now, 100)
+
+timelbl = Label(tk)
+timelbl.pack(pady = 10, anchor='center')
+clock()
+
+btn = Button(tk, text="Create Event", command = openForm)
+btn.pack(pady = 10)
+
+header = Label(tk, text = "Events: ", font='bold')
+header.pack(pady = 10, anchor = "w")
+for event in events:
+    eventsummary = Label(tk, text = event['start'].get('dateTime', event['start'].get('date')) + " " + event['summary'])
+    eventsummary.pack(pady = 10, anchor = "w")
+
+tk.mainloop()
+
+
 def main():
     api = get_calendar_api()
-    time_now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+    time_now = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
 
     events = get_upcoming_events(api, time_now, 10)
 
