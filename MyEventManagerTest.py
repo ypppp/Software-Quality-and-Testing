@@ -1,6 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, Mock, patch
 import MyEventManager
+from tkinter import *
+from tkinter import ttk
+from tkcalendar import Calendar, DateEntry
 # Add other imports here if needed
 
 class MyEventManagerTest(unittest.TestCase):
@@ -38,26 +41,26 @@ class MyEventManagerTest(unittest.TestCase):
 
     def test_create_task(self):
         api = Mock()
-        id = "test12345"
-        name = "test123"
-        loc = "Online via Zoom"
-        att = "yeeperngyew@gmail.com"
-        start = "2022-09-24"
-        end = "2022-09-25"
+        id = Entry(text = "test1111")
+        name = Entry(text = "testnameee")
+        loc = Entry(text="Online")
+        att = Entry(text = "thisisanemail@gmail.com")
+        start = DateEntry(date = "2022-09-25")
+        end = DateEntry(date = "2022-09-26")
 
         event = {
-        'summary': str(name),
-        'location': str(loc),
-        'id': str(id),
+        'summary': name.get(),
+        'location': loc.get(),
+        'id': id.get(),
         'start': {
-            'dateTime': str(start) + 'T00:00:00',
+            'dateTime': start.get() + 'T00:00:00',
             'timeZone': 'GMT+8',
         },
         'end': {
-            'dateTime': str(end) + 'T00:00:00',
+            'dateTime': end.get() + 'T00:00:00',
             'timeZone': 'GMT+8',
         },
-        'attendees': [
+        'attendees': [ {'email': att.get()}
         ],
         'reminders': {
             'useDefault': False,
@@ -66,18 +69,27 @@ class MyEventManagerTest(unittest.TestCase):
             ],
         },
     }
-        test = MyEventManager.create_task(api, id, name, loc, att, start, end)
+        test = MyEventManager.create_task(api, id, name, loc,att,start, end)
         self.assertEqual(
             api.test.return_value.list.return_value.execute.return_value.get.call_count, 0)
 
         var = api.mock_calls[1].kwargs['body']['id']
-        self.assertEqual(var, id)
+        self.assertEqual(var, id.get())
 
         var = api.mock_calls[1].kwargs['body']['summary']
-        self.assertEqual(var, name)
+        self.assertEqual(var, name.get())
 
         var = api.mock_calls[1].kwargs['body']['location']
-        self.assertEqual(var, loc)
+        self.assertEqual(var, loc.get())
+
+        var = api.mock_calls[1].kwargs['body']['attendees']
+        self.assertEqual(var, [{'email': att.get()}])
+
+        var = api.mock_calls[1].kwargs['body']['start']
+        self.assertEqual(var, {'dateTime': start.get() + 'T00:00:00', 'timeZone': 'GMT+8'})
+
+        var = api.mock_calls[1].kwargs['body']['end']
+        self.assertEqual(var, {'dateTime': end.get() + 'T00:00:00', 'timeZone': 'GMT+8'})
 
 
 def main():
