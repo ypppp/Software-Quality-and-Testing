@@ -161,7 +161,7 @@ def clock(timelabel):
 
 def updating_tasks(tk, temp, clicked):
     api = get_calendar_api()
-
+    option = []
     year = temp.get()
     month = clicked.get()
     last_day = calendar.monthrange(int(year), int(month))[1]
@@ -171,8 +171,16 @@ def updating_tasks(tk, temp, clicked):
     end_time = str(end_date) + "T00:00:00Z"
     events = get_events(api, start_time, end_time, 100)
     for event in events:
-        eventsummary = Button(tk, text = "EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], command=lambda: task_details(tk, event))
-        eventsummary.pack(pady = 10, anchor = "w")
+        option.append(["EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], event]) 
+    
+    button_dict = {}
+    for i in option:
+        string = i[0]
+        event1 = i[1]
+        def disp(x=event1):
+            return task_details(tk, x)
+        button_dict[string] = ttk.Button(tk, text=string, command=disp)
+        button_dict[string].pack(anchor = 'w')
 
 def task_details(tk, event):
     detailWind = Toplevel(tk)
