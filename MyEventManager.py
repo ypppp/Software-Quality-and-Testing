@@ -111,21 +111,17 @@ def openForm(tk):
     start.grid(row = 4,column = 1)
     end = DateEntry(newWind, date_pattern='yyyy-mm-dd', maxdate = maxdate1)
     end.grid(row = 5,column = 1)
-    
-    submitbtn = ttk.Button(newWind, text="Submit", command= lambda: create_task(id, name, loc, att, start, end)).grid(row = 6,column = 1)
-    
-
-    
-
-def create_task(id, name, loc, att, start, end):
     api = get_calendar_api()
+    submitbtn = ttk.Button(newWind, text="Submit", command= lambda: create_task(api, id, name, loc,att,start, end)).grid(row = 6,column = 1)
+    
+
+def create_task(api, id, name, loc,att,start, end):
     eID = id.get()
     eName = name.get()
     eLoc = loc.get()
     eAtt = att.get()
     eStart = start.get()
     eEnd = end.get()
-
     event = {
         'summary': str(eName),
         'location': str(eLoc),
@@ -175,8 +171,26 @@ def updating_tasks(tk, temp, clicked):
     end_time = str(end_date) + "T00:00:00Z"
     events = get_events(api, start_time, end_time, 100)
     for event in events:
-        eventsummary = Label(tk, text = "EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'])
+        eventsummary = Button(tk, text = "EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], command=lambda: task_details(tk, event))
         eventsummary.pack(pady = 10, anchor = "w")
+
+def task_details(tk, event):
+    detailWind = Toplevel(tk)
+    detailWind.title = "Details for Selected Task"
+    e1 = Label(detailWind, text = "EventID: " + event['id'])
+    e2 = Label(detailWind, text = "Event Name: " + event['summary'])
+    e3 = Label(detailWind, text = "Event Location: " + event['location'])
+    e4 = Label(detailWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start'].get('date')))
+    e5 = Label(detailWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end'].get('end')))
+    e6 = Label(detailWind, text = "Event Attendees: " + str(event['attendees']))
+    e1.pack(anchor='w')
+    e2.pack(anchor='w')
+    e3.pack(anchor='w')
+    e4.pack(anchor='w')
+    e5.pack(anchor='w')
+    e6.pack(anchor='w')
+    
+
 
 def create_ui():
     tk = Tk()
@@ -197,7 +211,7 @@ def create_ui():
     btn = Button(tk, text="Create Event", command = lambda: openForm(tk))
     btn.pack(pady = 10)
 
-    btn = Button(tk, text="Refresh Page", command = lambda: force_refresh(tk))
+    btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk))
     btn.pack(pady = 10, anchor = 'w')
 
     header = Label(tk, text = "Events: ", font='bold')
