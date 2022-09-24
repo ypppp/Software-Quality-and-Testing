@@ -146,7 +146,6 @@ def create_task(id, name, loc, att, start, end):
             {'method': 'email', 'minutes': 24 * 60},
             ],
         },
-        'sendUpdates': True,
     }
     counter = 0
     emails = eAtt.split(',')
@@ -156,7 +155,7 @@ def create_task(id, name, loc, att, start, end):
         if counter >= 20:
             break
     
-    event = api.events().insert(calendarId='primary', body=event).execute()
+    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
     
 
 def clock(timelabel):
