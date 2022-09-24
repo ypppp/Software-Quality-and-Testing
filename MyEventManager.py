@@ -159,7 +159,7 @@ def clock(timelabel):
     timelabel.config(text = "Current Time: " + string, font='bold')
     timelabel.after(1000, lambda: clock(timelabel))
 
-def updating_tasks(tk, temp, clicked):
+def updating_tasks(archive, tk, temp, clicked):
     api = get_calendar_api()
     option = []
     year = temp.get()
@@ -178,18 +178,18 @@ def updating_tasks(tk, temp, clicked):
         string = i[0]
         event1 = i[1]
         def disp(x=event1):
-            return task_details(tk, x)
+            return task_details(archive, tk, x)
         button_dict[string] = ttk.Button(tk, text=string, command=disp)
         button_dict[string].pack(anchor = 'w')
 
-def task_details(tk, event):
+def task_details(archive, tk, event):
     detailWind = Toplevel(tk)
     detailWind.title = "Details for Selected Task"
     e1 = Label(detailWind, text = "EventID: " + event['id'])
     e2 = Label(detailWind, text = "Event Name: " + event['summary'])
     e3 = Label(detailWind, text = "Event Location: " + event['location'])
-    e4 = Label(detailWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start'].get('date')))
-    e5 = Label(detailWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end'].get('end')))
+    e4 = Label(detailWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start']))
+    e5 = Label(detailWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end']))
     e6 = Label(detailWind, text = "Event Attendees: " + str(event['attendees']))
     e1.pack(anchor='w')
     e2.pack(anchor='w')
@@ -197,12 +197,42 @@ def task_details(tk, event):
     e4.pack(anchor='w')
     e5.pack(anchor='w')
     e6.pack(anchor='w')
+    delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id']))
+    delbtn.pack(anchor='w')
     
+def delete_task(detailWind, archive, dateTimeStart, dateTimeEnd, id):
+    api = get_calendar_api()
+    tempS = dateTimeStart.split('T')[0].split('-')
+    tempE = dateTimeEnd.split('T')[0].split('-')
+    date_start = date(int(tempS[0]),int(tempS[1]), int(tempS[2]))
+    date_end = date(int(tempE[0]), int(tempE[1]), int(tempE[2]))
+    currentDay = datetime.now().day
+    currentMonth = datetime.now().month
+    currentYear = datetime.now().year
+    date_now = date(currentYear, currentMonth, currentDay)
+    
+    if date_start >= date_now or date_end >= date_now:
+        archive.append(api.events().get(calendarId='primary', eventId=str(id)).execute())
+        api.events().delete(calendarId='primary', eventId=str(id)).execute()
+        detailWind.destroy()
+        print(archive)
+    else:
+        api.events().delete(calendarId='primary', eventId=str(id)).execute()
+        detailWind.destroy()
+        print(archive)
+
+def view_archive(tk, archive):
+    archive_wind = Toplevel(tk)
+    archive_wind.title = "Archive"
+    button_dict = {}
+    for i in range(len(archive)):
+        for j in archive:
+            button_dict[i] = ttk.Button(archive_wind, text= j['summary'], command= lambda: print("THis is supposed to ask you if you wanna restore"))
+        button_dict[i].pack(anchor='center')
 
 
-def create_ui():
+def create_ui(archive):
     tk = Tk()
-
     tk.geometry("1000x1000")
     tk.title("MyEventManager")
     currentDay = datetime.now().day
@@ -219,7 +249,10 @@ def create_ui():
     btn = Button(tk, text="Create Event", command = lambda: openForm(tk))
     btn.pack(pady = 10)
 
-    btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk))
+    btn = Button(tk, text="View Event Archive", command = lambda: view_archive(tk, archive))
+    btn.pack(pady = 10, anchor = 'center')
+
+    btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk, archive))
     btn.pack(pady = 10, anchor = 'w')
 
     header = Label(tk, text = "Events: ", font='bold')
@@ -252,17 +285,18 @@ def create_ui():
     temp.insert(0, "2022")
     temp.pack(anchor="w")
     
-    btn = Button(tk, text="Get Events", command = lambda: updating_tasks(tk, temp, clicked))
+    btn = Button(tk, text="Get Events", command = lambda: updating_tasks(archive, tk, temp, clicked))
     btn.pack(pady = 10, anchor = 'w')
     
     tk.mainloop()
 
-def force_refresh(tk):
+def force_refresh(tk, archive):
     tk.destroy()
-    create_ui()
+    create_ui(archive)
 
 def main():
-    create_ui()
+    archive = []
+    create_ui(archive)
    
 
 
