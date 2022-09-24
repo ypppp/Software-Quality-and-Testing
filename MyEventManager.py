@@ -146,6 +146,7 @@ def create_task(id, name, loc, att, start, end):
             {'method': 'email', 'minutes': 24 * 60},
             ],
         },
+        'sendUpdates': True,
     }
     counter = 0
     emails = eAtt.split(',')
