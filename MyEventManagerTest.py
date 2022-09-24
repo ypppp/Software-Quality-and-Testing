@@ -1,3 +1,4 @@
+from asyncio import events
 import unittest
 from unittest.mock import MagicMock, Mock, patch
 import MyEventManager
@@ -90,6 +91,49 @@ class MyEventManagerTest(unittest.TestCase):
 
         var = api.mock_calls[1].kwargs['body']['end']
         self.assertEqual(var, {'dateTime': end.get() + 'T00:00:00', 'timeZone': 'GMT+8'})
+
+    def test_updating_tasks(self):
+        api = Mock()
+        option = []
+        events = []
+
+        event = {
+        'summary': "tester123",
+        'location': "online via zoom",
+        'id': "test1234",
+        'start': {
+            'dateTime': "2022-09-25" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'end': {
+            'dateTime': "2022-09-26" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'attendees': [ {'email': 'yeeperngyew@gmail.com'}
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            ],
+        },
+    }
+
+    ##    events = MyEventManager.get_events(api,"2022-09-25T00:00:00.000000Z", "2022-09-26T00:00:00.000000Z", 100) 
+        events.append(event)
+
+        for event in events:
+            option.append(["EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], event])
+
+        correctOptions = ["EventID: " + "test1234" + " Event Date/Time: " + "2022-09-25" + 'T00:00:00' + " Event Name: " + "tester123", event]
+
+        self.assertEqual(option, correctOptions)
+
+
+
+
+
+
 
 
 def main():
