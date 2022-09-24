@@ -38,7 +38,7 @@ class MyEventManagerTest(unittest.TestCase):
 
     def test_create_task(self):
         api = Mock()
-        id = "Test12345"
+        id = "test12345"
         name = "test123"
         loc = "Online via Zoom"
         att = "yeeperngyew@gmail.com"
@@ -65,15 +65,19 @@ class MyEventManagerTest(unittest.TestCase):
             {'method': 'email', 'minutes': 24 * 60},
             ],
         },
-        'sendUpdates': True,
-
     }
-        test = MyEventManager.create_task(id, name, loc, att, start, end)
+        test = MyEventManager.create_task(api, id, name, loc, att, start, end)
         self.assertEqual(
-            api.test.return_value.list.return_value.execute.return_value.get.call_count, 1)
+            api.test.return_value.list.return_value.execute.return_value.get.call_count, 0)
 
-        args, kwargs = api.test.return_value.list.call_args_list[0]
-        self.assertEqual(kwargs['id'], id)
+        var = api.mock_calls[1].kwargs['body']['id']
+        self.assertEqual(var, id)
+
+        var = api.mock_calls[1].kwargs['body']['summary']
+        self.assertEqual(var, name)
+
+        var = api.mock_calls[1].kwargs['body']['location']
+        self.assertEqual(var, loc)
 
 
 def main():
