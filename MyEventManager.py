@@ -186,7 +186,7 @@ def updating_tasks(archive, tk, temp, clicked):
 def task_details(button_dict, archive, tk, event, string):
     api = get_calendar_api()
     detailWind = Toplevel(tk)
-    detailWind.title = "Details for Selected Task"
+    detailWind.title("Details for Selected Task")
     e1 = Label(detailWind, text = "EventID: " + event['id'])
     e2 = Label(detailWind, text = "Event Name: " + event['summary'])
     e3 = Label(detailWind, text = "Event Location: " + event['location'])
@@ -248,7 +248,7 @@ def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id
 def view_archive(tk, archive):
     api = get_calendar_api()
     archive_wind = Toplevel(tk)
-    archive_wind.title = "Archive"
+    archive_wind.title("Archive")
     button_dict = {}
     for i in range(len(archive)):
         for j in archive:
@@ -283,9 +283,52 @@ def restore_event(button_dict, api, archive, i):
     archive.remove(archive[i])
     button_dict[i].destroy()
 
+def search_form(tk):
+    api = get_calendar_api()
+    searchWind = Toplevel(tk)
+    searchWind.title("Search Window")
+    searchWind.geometry("800x500")
+
+    l1 = Label(searchWind ,text = "Search by Event Name: ")
+    search_term = Entry(searchWind)
+    l1.pack(anchor = 'center')
+    search_term.pack(anchor='center')
+    btn = Button(searchWind, text="Search", command = lambda: search_event(searchWind, api, search_term))
+    btn.pack(anchor = 'center')
+
+def search_event(searchWind, api, search_term):
+    Id_list = []
+    btn_dict = {}
+    term = search_term.get()
+    list_events = api.events().list(calendarId='primary', q=str(term)).execute()
+    for event in list_events['items']:
+        Id_list.append(event['id'])
+    
+    for id in Id_list:
+        event = api.events().get(calendarId='primary', eventId = id).execute()
+        btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(api, searchWind, id))
+        btn_dict[event['summary']].pack(anchor='center')
+
+def print_details(api, searchWind, id):
+    event = api.events().get(calendarId='primary', eventId=id).execute()
+    print(event)
+    e1 = Label(searchWind, text = "EventID: " + event['id'])
+    e2 = Label(searchWind, text = "Event Name: " + event['summary'])
+    e3 = Label(searchWind, text = "Event Location: " + event['location'])
+    e4 = Label(searchWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start']))
+    e5 = Label(searchWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end']))
+    e6 = Label(searchWind, text = "Event Attendees: " + str(event['attendees']))
+    e1.pack(anchor='w')
+    e2.pack(anchor='w')
+    e3.pack(anchor='w')
+    e4.pack(anchor='w')
+    e5.pack(anchor='w')
+    e6.pack(anchor='w')
+    
+
 def create_ui(archive):
     tk = Tk()
-    tk.geometry("1000x1000")
+    tk.geometry("850x850")
     tk.title("MyEventManager")
     currentDay = datetime.now().day
     currentMonth = datetime.now().month
@@ -309,6 +352,9 @@ def create_ui(archive):
 
     header = Label(tk, text = "Events: ", font='bold')
     header.pack(pady = 10, anchor = "w")
+
+    btn = Button(tk, text="Search Events", command = lambda: search_form(tk))
+    btn.pack(pady = 10, anchor = 'w')
 
     options_month = [
         "1",
