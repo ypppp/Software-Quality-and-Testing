@@ -236,8 +236,8 @@ def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id
     date_now = date(currentYear, currentMonth, currentDay)
     
     if date_start >= date_now or date_end >= date_now:
-        archive.append(api.events().get(calendarId='primary', eventId=str(id)).execute())
-        api.events().delete(calendarId='primary', eventId=str(id)).execute()
+        archive.append(api.events().get(calendarId='primary', eventId=id).execute())
+        api.events().delete(calendarId='primary', eventId=id).execute()
         detailWind.destroy()
         button_dict[string].destroy()
     else:
@@ -246,14 +246,42 @@ def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id
         button_dict[string].destroy()
 
 def view_archive(tk, archive):
+    api = get_calendar_api()
     archive_wind = Toplevel(tk)
     archive_wind.title = "Archive"
     button_dict = {}
     for i in range(len(archive)):
         for j in archive:
-            button_dict[i] = ttk.Button(archive_wind, text= j['summary'], command= lambda: print("THis is supposed to ask you if you wanna restore"))
+            button_dict[i] = ttk.Button(archive_wind, text= j['summary'], command= lambda: restore_event(button_dict, api, archive, i))
         button_dict[i].pack(anchor='center')
 
+def restore_event(button_dict, api, archive, i):
+    start_date = archive[i]['start']['dateTime'].split("T")[0]
+    end_date = archive[i]['end']['dateTime'].split("T")[0]
+    event = {
+        'summary': archive[i]['summary'],
+        'location': archive[i]['location'],
+        'id': archive[i]['id'] + "n",
+        'start': {
+            'dateTime': start_date + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'end': {
+            'dateTime': end_date + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'attendees': [
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            ],
+        },
+    }
+    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+    archive.remove(archive[i])
+    button_dict[i].destroy()
 
 def create_ui(archive):
     tk = Tk()
