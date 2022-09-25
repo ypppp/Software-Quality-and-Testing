@@ -184,6 +184,7 @@ def updating_tasks(archive, tk, temp, clicked):
         button_dict[string].pack(anchor = 'w')
 
 def task_details(button_dict, archive, tk, event, string):
+    api = get_calendar_api()
     detailWind = Toplevel(tk)
     detailWind.title = "Details for Selected Task"
     e1 = Label(detailWind, text = "EventID: " + event['id'])
@@ -198,8 +199,30 @@ def task_details(button_dict, archive, tk, event, string):
     e4.pack(anchor='w')
     e5.pack(anchor='w')
     e6.pack(anchor='w')
+    cal = api.calendars().get(calendarId='primary').execute()
+    for i in range(len(event['attendees'])):
+        if event['attendees'][i]['email'] ==  cal['summary'] and event['attendees'][i]['responseStatus'] == 'needsAction':
+            accept_btn = ttk.Button(detailWind, text= "Accept", command = lambda: accept_invite(detailWind, event['id'], i))
+            reject_btn = ttk.Button(detailWind, text="Reject", command=lambda: reject_invite(detailWind, event['id'], i))
+            accept_btn.pack(anchor='w')
+            reject_btn.pack(anchor='w')
+            break
     delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(button_dict, detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id'], string))
     delbtn.pack(anchor='w')
+
+def accept_invite(detailWind, id, i):
+    api = get_calendar_api()
+    event = api.events().get(calendarId='primary', eventId=id).execute()
+    event['attendees'][i]['responseStatus'] = 'accepted'
+    api.events().update(calendarId='primary', eventId=id, body=event).execute()
+    detailWind.destroy()
+
+def reject_invite(detailWind, id, i):
+    api = get_calendar_api()
+    event = api.events().get(calendarId='primary', eventId=id).execute()
+    event['attendees'][i]['responseStatus'] = 'declined'
+    api.events().update(calendarId='primary', eventId=id, body=event).execute()
+    detailWind.destroy()
     
 def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id, string):
     api = get_calendar_api()
