@@ -48,6 +48,8 @@ class MyEventManagerTest(unittest.TestCase):
         att = Entry(text = "thisisanemail@gmail.com")
         start = DateEntry(date = "2022-09-25")
         end = DateEntry(date = "2022-09-26")
+        tk = Tk()
+        newWind = Toplevel(tk)
 
         event = {
         'summary': name.get(),
@@ -70,7 +72,7 @@ class MyEventManagerTest(unittest.TestCase):
             ],
         },
     }
-        test = MyEventManager.create_task(api, id, name, loc,att,start, end)
+        test = MyEventManager.create_task(newWind, api, id, name, loc,att,start, end)
         self.assertEqual(
             api.test.return_value.list.return_value.execute.return_value.get.call_count, 0)
 
@@ -127,7 +129,8 @@ class MyEventManagerTest(unittest.TestCase):
 
         correctOptions = ["EventID: " + "test1234" + " Event Date/Time: " + "2022-09-25" + 'T00:00:00' + " Event Name: " + "tester123", event]
 
-        self.assertEqual(option, correctOptions)
+        self.assertEqual(option[0], correctOptions)
+
 
 
 
