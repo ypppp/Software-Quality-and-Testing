@@ -164,6 +164,45 @@ class MyEventManagerTest(unittest.TestCase):
 
         args, kwargs = mock_api.test1.return_value.list.call_args_list[0]
         self.assertEqual(kwargs['id'], event["id"])
+
+    def test_search_event(self):
+        btn = {}
+        tk = Tk()
+        searchWind = Toplevel(tk)
+        mock_api = Mock()
+        search_term = Entry(searchWind, text = "test1234")
+
+        event = {
+        'summary': "tester123",
+        'location': "online via zoom",
+        'id': "test1234",
+        'start': {
+            'dateTime': "2022-09-25" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'end': {
+            'dateTime': "2022-09-26" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'attendees': [ {'email': 'yeeperngyew@gmail.com'}
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            ],
+        },
+    }
+
+        test = mock_api.events().insert(calendarId='primary', body=event).execute()
+        test1 = MyEventManager.search_event(btn, mock_api, searchWind, search_term)
+
+
+        args, kwargs = mock_api.test1.return_value.list.call_args_list[0]
+        self.assertEqual(kwargs['summary'], search_term)
+
+
+
         
 
 
