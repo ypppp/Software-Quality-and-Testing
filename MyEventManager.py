@@ -19,11 +19,12 @@ import datetime
 import pickle
 import os.path
 import calendar
+import json
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from tkcalendar import Calendar, DateEntry
 from datetime import datetime, date
 from time import strftime
@@ -184,6 +185,7 @@ def updating_tasks(archive, tk, temp, clicked, api):
 def task_details(button_dict, archive, tk, event, string, api):
     detailWind = Toplevel(tk)
     detailWind.title("Details for Selected Task")
+    detailWind.geometry("500x300")
     e1 = Label(detailWind, text = "EventID: " + event['id'])
     e2 = Label(detailWind, text = "Event Name: " + event['summary'])
     e3 = Label(detailWind, text = "Event Location: " + event['location'])
@@ -318,11 +320,50 @@ def print_details(btn_dict, api, searchWind, id):
     e5.pack(anchor='w')
     e6.pack(anchor='w')
     btn_dict[event['summary']].destroy()
+
+def import_json(api):
+    with open('import.json', 'r') as openfile:
+        json_object = json.load(openfile)
+    
+    for i in json_object:
+        start_date = i['start']['dateTime'].split("T")[0]
+        end_date = i['end']['dateTime'].split("T")[0]
+        event = {
+        'summary': i['summary'],
+        'location': i['location'],
+        'id': i['id'] + "n",
+        'start': {
+            'dateTime': start_date + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'end': {
+            'dateTime': end_date + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'attendees': [
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            ],
+        },
+    }
+    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+    messagebox.showinfo(title=None, message="Imported Successfully")
+        
+
+def export_json(api):
+    event_list = api.events().list(calendarId='primary').execute()
+    with open("export.json", "w") as outfile:
+        json.dump(event_list, outfile)
+    
+    messagebox.showinfo(title=None, message="Exported Successfully")
     
 
 def create_ui(archive, api):
     tk = Tk()
-    tk.geometry("850x850")
+    tk.geometry("850x1000")
     tk.title("MyEventManager")
     currentDay = datetime.now().day
     currentMonth = datetime.now().month
@@ -339,6 +380,12 @@ def create_ui(archive, api):
     btn.pack(pady = 10)
 
     btn = Button(tk, text="View Event Archive", command = lambda: view_archive(tk, archive, api))
+    btn.pack(pady = 10, anchor = 'center')
+
+    btn = Button(tk, text="Import JSON", command = lambda: import_json(api))
+    btn.pack(pady = 10, anchor = 'center')
+
+    btn = Button(tk, text="Export JSON", command = lambda: export_json(api))
     btn.pack(pady = 10, anchor = 'center')
 
     btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk, archive))
