@@ -95,7 +95,6 @@ class MyEventManagerTest(unittest.TestCase):
         self.assertEqual(var, {'dateTime': end.get() + 'T00:00:00', 'timeZone': 'GMT+8'})
 
     def test_updating_tasks(self):
-        api = Mock()
         option = []
         events = []
 
@@ -130,6 +129,42 @@ class MyEventManagerTest(unittest.TestCase):
         correctOptions = ["EventID: " + "test1234" + " Event Date/Time: " + "2022-09-25" + 'T00:00:00' + " Event Name: " + "tester123", event]
 
         self.assertEqual(option[0], correctOptions)
+
+    def test_print_details(self):
+        btn_dict = {'summary': 'test123'}
+        mock_api = Mock()
+        tk = Tk()
+        searchWind = Toplevel(tk)
+
+        event = {
+        'summary': "tester123",
+        'location': "online via zoom",
+        'id': "test1234",
+        'start': {
+            'dateTime': "2022-09-25" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'end': {
+            'dateTime': "2022-09-26" + 'T00:00:00',
+            'timeZone': 'GMT+8',
+        },
+        'attendees': [ {'email': 'yeeperngyew@gmail.com'}
+        ],
+        'reminders': {
+            'useDefault': False,
+            'overrides': [
+            {'method': 'email', 'minutes': 24 * 60},
+            ],
+        },
+    }
+
+        test = mock_api.events().insert(calendarId='primary', body=event).execute()
+        test1 = MyEventManager.print_details(btn_dict, mock_api, searchWind, event["id"])
+
+
+        args, kwargs = mock_api.test1.return_value.list.call_args_list[0]
+        self.assertEqual(kwargs['id'], event["id"])
+        
 
 
 
