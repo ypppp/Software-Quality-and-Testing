@@ -293,10 +293,10 @@ def search_form(tk):
     search_term = Entry(searchWind)
     l1.pack(anchor = 'center')
     search_term.pack(anchor='center')
-    btn = Button(searchWind, text="Search", command = lambda: search_event(searchWind, api, search_term))
+    btn = Button(searchWind, text="Search", command = lambda: search_event(btn, searchWind, api, search_term))
     btn.pack(anchor = 'center')
 
-def search_event(searchWind, api, search_term):
+def search_event(btn, searchWind, api, search_term):
     Id_list = []
     btn_dict = {}
     term = search_term.get()
@@ -306,10 +306,11 @@ def search_event(searchWind, api, search_term):
     
     for id in Id_list:
         event = api.events().get(calendarId='primary', eventId = id).execute()
-        btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(api, searchWind, id))
+        btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(btn_dict, api, searchWind, id))
         btn_dict[event['summary']].pack(anchor='center')
+    btn.destroy()
 
-def print_details(api, searchWind, id):
+def print_details(btn_dict, api, searchWind, id):
     event = api.events().get(calendarId='primary', eventId=id).execute()
     print(event)
     e1 = Label(searchWind, text = "EventID: " + event['id'])
@@ -324,6 +325,7 @@ def print_details(api, searchWind, id):
     e4.pack(anchor='w')
     e5.pack(anchor='w')
     e6.pack(anchor='w')
+    btn_dict[event['summary']].destroy
     
 
 def create_ui(archive):
