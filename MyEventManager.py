@@ -150,9 +150,11 @@ def create_task(newWind, api, id, name, loc,att,start, end):
         counter = counter + 1
         if counter >= 20:
             break
-    
-    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
-    newWind.destroy()
+    try:
+        event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+        newWind.destroy()
+    except Exception as e:
+        messagebox.showinfo(title=None, message="Create Task Failed: " + str(e))
     
 
 def clock(timelabel):
@@ -306,7 +308,6 @@ def search_event(btn, searchWind, api, search_term):
 
 def print_details(btn_dict, api, searchWind, id):
     event = api.events().get(calendarId='primary', eventId=id).execute()
-    print(event)
     e1 = Label(searchWind, text = "EventID: " + event['id'])
     e2 = Label(searchWind, text = "Event Name: " + event['summary'])
     e3 = Label(searchWind, text = "Event Location: " + event['location'])
