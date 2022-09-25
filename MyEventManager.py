@@ -112,10 +112,10 @@ def openForm(tk):
     end = DateEntry(newWind, date_pattern='yyyy-mm-dd', maxdate = maxdate1)
     end.grid(row = 5,column = 1)
     api = get_calendar_api()
-    submitbtn = ttk.Button(newWind, text="Submit", command= lambda: create_task(api, id, name, loc,att,start, end)).grid(row = 6,column = 1)
+    submitbtn = ttk.Button(newWind, text="Submit", command= lambda: create_task(newWind, api, id, name, loc,att,start, end)).grid(row = 6,column = 1)
     
 
-def create_task(api, id, name, loc,att,start, end):
+def create_task(newWind, api, id, name, loc,att,start, end):
     eID = id.get()
     eName = name.get()
     eLoc = loc.get()
@@ -152,6 +152,7 @@ def create_task(api, id, name, loc,att,start, end):
             break
     
     event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+    newWind.destroy()
     
 
 def clock(timelabel):
@@ -160,6 +161,7 @@ def clock(timelabel):
     timelabel.after(1000, lambda: clock(timelabel))
 
 def updating_tasks(archive, tk, temp, clicked):
+    button_dict = {}
     api = get_calendar_api()
     option = []
     year = temp.get()
@@ -173,16 +175,15 @@ def updating_tasks(archive, tk, temp, clicked):
     for event in events:
         option.append(["EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], event]) 
     
-    button_dict = {}
     for i in option:
         string = i[0]
         event1 = i[1]
         def disp(x=event1):
-            return task_details(archive, tk, x)
+            return task_details(button_dict, archive, tk, x, string)
         button_dict[string] = ttk.Button(tk, text=string, command=disp)
         button_dict[string].pack(anchor = 'w')
 
-def task_details(archive, tk, event):
+def task_details(button_dict, archive, tk, event, string):
     detailWind = Toplevel(tk)
     detailWind.title = "Details for Selected Task"
     e1 = Label(detailWind, text = "EventID: " + event['id'])
@@ -197,10 +198,10 @@ def task_details(archive, tk, event):
     e4.pack(anchor='w')
     e5.pack(anchor='w')
     e6.pack(anchor='w')
-    delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id']))
+    delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(button_dict, detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id'], string))
     delbtn.pack(anchor='w')
     
-def delete_task(detailWind, archive, dateTimeStart, dateTimeEnd, id):
+def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id, string):
     api = get_calendar_api()
     tempS = dateTimeStart.split('T')[0].split('-')
     tempE = dateTimeEnd.split('T')[0].split('-')
@@ -215,11 +216,11 @@ def delete_task(detailWind, archive, dateTimeStart, dateTimeEnd, id):
         archive.append(api.events().get(calendarId='primary', eventId=str(id)).execute())
         api.events().delete(calendarId='primary', eventId=str(id)).execute()
         detailWind.destroy()
-        print(archive)
+        button_dict[string].destroy()
     else:
         api.events().delete(calendarId='primary', eventId=str(id)).execute()
         detailWind.destroy()
-        print(archive)
+        button_dict[string].destroy()
 
 def view_archive(tk, archive):
     archive_wind = Toplevel(tk)
