@@ -154,7 +154,7 @@ def create_task(newWind, api, id, name, loc,att,start, end):
         event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
         newWind.destroy()
     except Exception as e:
-        messagebox.showinfo(title=None, message="Create Task Failed: " + str(e))
+        messagebox.showinfo(title=None, message="Create Event Failed: " + str(e))
     
 
 def clock(timelabel):
@@ -193,7 +193,12 @@ def task_details(button_dict, archive, tk, event, string, api):
     e3 = Label(detailWind, text = "Event Location: " + event['location'])
     e4 = Label(detailWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start']))
     e5 = Label(detailWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end']))
-    e6 = Label(detailWind, text = "Event Attendees: " + str(event['attendees']))
+    try:
+        e6 = Label(detailWind, text = "Event Attendees: " + str(event['attendees']))
+    except Exception as e:
+        e6 = Label(detailWind, text="No valid attendees found")
+        delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(button_dict, detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id'], string, api))
+        delbtn.pack(anchor='center')
     e1.pack(anchor='w')
     e2.pack(anchor='w')
     e3.pack(anchor='w')
@@ -246,11 +251,15 @@ def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id
 def view_archive(tk, archive, api):
     archive_wind = Toplevel(tk)
     archive_wind.title("Archive")
+    l1 = Label(archive_wind, text= "Cancelled Events:")
+    l1.pack(anchor = 'center')
     button_dict = {}
     for i in range(len(archive)):
         for j in archive:
             button_dict[i] = ttk.Button(archive_wind, text= j['summary'], command= lambda: restore_event(button_dict, api, archive, i))
         button_dict[i].pack(anchor='center')
+    l2 = Label(archive_wind, text= "Select to restore")
+    l2.pack(anchor = 'center')
 
 def restore_event(button_dict, api, archive, i):
     start_date = archive[i]['start']['dateTime'].split("T")[0]
@@ -276,9 +285,12 @@ def restore_event(button_dict, api, archive, i):
             ],
         },
     }
-    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
-    archive.remove(archive[i])
-    button_dict[i].destroy()
+    try:
+        event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+        archive.remove(archive[i])
+        button_dict[i].destroy()
+    except Exception as e:
+        messagebox.showinfo(title=None, message="Restore Event Failed: " + str(e))
 
 def search_form(tk, api):
     searchWind = Toplevel(tk)
@@ -350,16 +362,22 @@ def import_json(api):
             ],
         },
     }
-    event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
-    messagebox.showinfo(title=None, message="Imported Successfully")
+    try:
+        event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
+        messagebox.showinfo(title=None, message="Imported Successfully")
+    except Exception as e:
+        messagebox.showinfo(title=None, message="Import Failed: " + str(e))
         
 
 def export_json(api):
-    event_list = api.events().list(calendarId='primary').execute()
-    with open("export.json", "w") as outfile:
-        json.dump(event_list, outfile)
+    try:
+        event_list = api.events().list(calendarId='primary').execute()
+        with open("export.json", "w") as outfile:
+            json.dump(event_list, outfile)
     
-    messagebox.showinfo(title=None, message="Exported Successfully")
+        messagebox.showinfo(title=None, message="Exported Successfully")
+    except Exception as e:
+        messagebox.showinfo(title=None, message="Export Failed: " + str(e))
     
 
 def create_ui(archive, api):
@@ -389,7 +407,7 @@ def create_ui(archive, api):
     btn = Button(tk, text="Export JSON", command = lambda: export_json(api))
     btn.pack(pady = 10, anchor = 'center')
 
-    btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk, archive))
+    btn = Button(tk, text="Clear Events", command = lambda: force_refresh(tk, archive, api))
     btn.pack(pady = 10, anchor = 'w')
 
     header = Label(tk, text = "Events: ", font='bold')
@@ -430,9 +448,9 @@ def create_ui(archive, api):
     
     tk.mainloop()
 
-def force_refresh(tk, archive):
+def force_refresh(tk, archive, api):
     tk.destroy()
-    create_ui(archive)
+    create_ui(archive, api)
 
 def main():
     archive = []
