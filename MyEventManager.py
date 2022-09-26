@@ -170,6 +170,7 @@ def updating_tasks(archive, tk, temp, clicked, api):
     end_time = str(end_date) + "T00:00:00Z"
     events = get_events(api, start_time, end_time, 100)
     populate(events, archive, tk, api)
+    return 0
 
 def populate(events, archive, tk, api):
     button_dict = {}
@@ -332,12 +333,12 @@ def search_event(btn, searchWind, api, search_term):
     
     for id in Id_list:
         event = api.events().get(calendarId='primary', eventId = id).execute()
-        btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(btn_dict, api, searchWind, id))
+        btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(api, searchWind, id))
         btn_dict[event['summary']].pack(anchor='center')
     btn.destroy()
     return 0
 
-def print_details(btn_dict, api, searchWind, id):
+def print_details(api, searchWind, id):
     event = api.events().get(calendarId='primary', eventId=id).execute()
     e1 = Label(searchWind, text = "EventID: " + event['id'])
     e2 = Label(searchWind, text = "Event Name: " + event['summary'])
@@ -354,14 +355,13 @@ def print_details(btn_dict, api, searchWind, id):
     e4.pack(anchor='w')
     e5.pack(anchor='w')
     e6.pack(anchor='w')
-    btn_dict[event['summary']].destroy()
-    ret_val = [e1.cget("text"),e2.cget("text"),e3.cget("text"),e4.cget("text"),e5.cget("text"),e6.cget("text")]
-    return ret_val
+    return 0
 
 def import_json(api):
     filename = filedialog.askopenfilename()
-    if filename.split(".")[-1] == "json":
-        with open(filename, 'r') as openfile:
+    file_ext = filename.split(".")[-1]
+    if file_ext == "json":
+        with open(filename.split("/")[-1], 'r') as openfile:
             json_object = json.load(openfile)
     else:
         messagebox.showinfo(title=None, message="Import Failed: Invalid File")
