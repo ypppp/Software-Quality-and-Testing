@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from tkinter import *
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from tkcalendar import Calendar, DateEntry
 from datetime import datetime, date
 from time import strftime
@@ -113,6 +113,7 @@ def openForm(tk, api):
     end = DateEntry(newWind, date_pattern='yyyy-mm-dd', maxdate = maxdate1)
     end.grid(row = 5,column = 1)
     submitbtn = ttk.Button(newWind, text="Submit", command= lambda: create_task(newWind, api, id, name, loc,att,start, end)).grid(row = 6,column = 1)
+    return newWind.state()
     
 
 def create_task(newWind, api, id, name, loc,att,start, end):
@@ -153,18 +154,13 @@ def create_task(newWind, api, id, name, loc,att,start, end):
     try:
         event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
         newWind.destroy()
+        return 0
     except Exception as e:
         messagebox.showinfo(title=None, message="Create Event Failed: " + str(e))
+        return 1
     
 
-def clock(timelabel):
-    string = strftime('%H:%M:%S %p')
-    timelabel.config(text = "Current Time: " + string, font='bold')
-    timelabel.after(1000, lambda: clock(timelabel))
-
 def updating_tasks(archive, tk, temp, clicked, api):
-    button_dict = {}
-    option = []
     year = temp.get()
     month = clicked.get()
     last_day = calendar.monthrange(int(year), int(month))[1]
@@ -173,16 +169,26 @@ def updating_tasks(archive, tk, temp, clicked, api):
     start_time = str(start_date) + "T00:00:00Z"
     end_time = str(end_date) + "T00:00:00Z"
     events = get_events(api, start_time, end_time, 100)
+    populate(events, archive, tk, api)
+
+def populate(events, archive, tk, api):
+    button_dict = {}
+    option = []
     for event in events:
         option.append(["EventID: " + event['id'] + " Event Date/Time: " + event['start'].get('dateTime', event['start'].get('date')) + " Event Name: " + event['summary'], event]) 
     
-    for i in option:
-        string = i[0]
-        event1 = i[1]
-        def disp(x=event1):
-            return task_details(button_dict, archive, tk, x, string, api)
-        button_dict[string] = ttk.Button(tk, text=string, command=disp)
-        button_dict[string].pack(anchor = 'w')
+    try:
+        for i in option:
+            string = i[0]
+            event1 = i[1]
+            def disp(x=event1):
+                return task_details(button_dict, archive, tk, x, string, api)
+            button_dict[string] = ttk.Button(tk, text=string, command=disp)
+            button_dict[string].pack(anchor = 'w')
+        return 0
+    except Exception as e:
+        messagebox.showinfo(title=None, message="An exception occured! " + str(e))
+        return 1
 
 def task_details(button_dict, archive, tk, event, string, api):
     detailWind = Toplevel(tk)
@@ -215,18 +221,21 @@ def task_details(button_dict, archive, tk, event, string, api):
             break
     delbtn = ttk.Button(detailWind, text="Delete/Cancel Event", command=lambda: delete_task(button_dict, detailWind, archive, event['start'].get('dateTime'),event['end'].get('dateTime'), event['id'], string, api))
     delbtn.pack(anchor='w')
+    return detailWind.state()
 
 def accept_invite(detailWind, id, i, api):
     event = api.events().get(calendarId='primary', eventId=id).execute()
     event['attendees'][i]['responseStatus'] = 'accepted'
     api.events().update(calendarId='primary', eventId=id, body=event).execute()
     detailWind.destroy()
+    return 0
 
 def reject_invite(detailWind, id, i, api):
     event = api.events().get(calendarId='primary', eventId=id).execute()
     event['attendees'][i]['responseStatus'] = 'declined'
     api.events().update(calendarId='primary', eventId=id, body=event).execute()
     detailWind.destroy()
+    return 0
     
 def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id, string, api):
     tempS = dateTimeStart.split('T')[0].split('-')
@@ -243,10 +252,14 @@ def delete_task(button_dict, detailWind, archive, dateTimeStart, dateTimeEnd, id
         api.events().delete(calendarId='primary', eventId=id).execute()
         detailWind.destroy()
         button_dict[string].destroy()
+        messagebox.showinfo(title=None, message="Event Cancelled Successfully, event added to archive")
+        return 0
     else:
         api.events().delete(calendarId='primary', eventId=str(id)).execute()
         detailWind.destroy()
         button_dict[string].destroy()
+        messagebox.showinfo(title=None, message="Event Deleted Successfully")
+        return 0
 
 def view_archive(tk, archive, api):
     archive_wind = Toplevel(tk)
@@ -260,6 +273,7 @@ def view_archive(tk, archive, api):
         button_dict[i].pack(anchor='center')
     l2 = Label(archive_wind, text= "Select to restore")
     l2.pack(anchor = 'center')
+    return archive_wind.state()
 
 def restore_event(button_dict, api, archive, i):
     start_date = archive[i]['start']['dateTime'].split("T")[0]
@@ -289,8 +303,11 @@ def restore_event(button_dict, api, archive, i):
         event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
         archive.remove(archive[i])
         button_dict[i].destroy()
+        messagebox.showinfo(title=None, message="Restore Event Successful")
+        return 0
     except Exception as e:
         messagebox.showinfo(title=None, message="Restore Event Failed: " + str(e))
+        return 1
 
 def search_form(tk, api):
     searchWind = Toplevel(tk)
@@ -303,6 +320,7 @@ def search_form(tk, api):
     search_term.pack(anchor='center')
     btn = Button(searchWind, text="Search", command = lambda: search_event(btn, searchWind, api, search_term))
     btn.pack(anchor = 'center')
+    return searchWind.state()
 
 def search_event(btn, searchWind, api, search_term):
     Id_list = []
@@ -317,6 +335,7 @@ def search_event(btn, searchWind, api, search_term):
         btn_dict[event['summary']] = ttk.Button(searchWind, text = event['summary'], command= lambda: print_details(btn_dict, api, searchWind, id))
         btn_dict[event['summary']].pack(anchor='center')
     btn.destroy()
+    return 0
 
 def print_details(btn_dict, api, searchWind, id):
     event = api.events().get(calendarId='primary', eventId=id).execute()
@@ -325,7 +344,10 @@ def print_details(btn_dict, api, searchWind, id):
     e3 = Label(searchWind, text = "Event Location: " + event['location'])
     e4 = Label(searchWind, text = "Event Start Date/Time: " + event['start'].get('dateTime', event['start']))
     e5 = Label(searchWind, text = "Event End Date/Time: " + event['end'].get('dateTime', event['end']))
-    e6 = Label(searchWind, text = "Event Attendees: " + str(event['attendees']))
+    try:
+        e6 = Label(searchWind, text = "Event Attendees: " + str(event['attendees']))
+    except Exception as e:
+        e6 = Label(searchWind, text="No valid attendees found")
     e1.pack(anchor='w')
     e2.pack(anchor='w')
     e3.pack(anchor='w')
@@ -333,10 +355,17 @@ def print_details(btn_dict, api, searchWind, id):
     e5.pack(anchor='w')
     e6.pack(anchor='w')
     btn_dict[event['summary']].destroy()
+    ret_val = [e1.cget("text"),e2.cget("text"),e3.cget("text"),e4.cget("text"),e5.cget("text"),e6.cget("text")]
+    return ret_val
 
 def import_json(api):
-    with open('import.json', 'r') as openfile:
-        json_object = json.load(openfile)
+    filename = filedialog.askopenfilename()
+    if filename.split(".")[-1] == "json":
+        with open(filename, 'r') as openfile:
+            json_object = json.load(openfile)
+    else:
+        messagebox.showinfo(title=None, message="Import Failed: Invalid File")
+        return 1
     
     for i in json_object:
         start_date = i['start']['dateTime'].split("T")[0]
@@ -365,8 +394,10 @@ def import_json(api):
     try:
         event = api.events().insert(calendarId='primary', body=event, sendUpdates = 'all').execute()
         messagebox.showinfo(title=None, message="Imported Successfully")
+        return 0
     except Exception as e:
         messagebox.showinfo(title=None, message="Import Failed: " + str(e))
+        return 1
         
 
 def export_json(api):
@@ -376,8 +407,10 @@ def export_json(api):
             json.dump(event_list, outfile)
     
         messagebox.showinfo(title=None, message="Exported Successfully")
+        return 0
     except Exception as e:
         messagebox.showinfo(title=None, message="Export Failed: " + str(e))
+        return 1
     
 
 def create_ui(archive, api):
@@ -390,10 +423,6 @@ def create_ui(archive, api):
     maxdate1 = date(2050,12,31)
     cal = Calendar(tk, selectmode = 'day', year = currentYear, month = currentMonth, day = currentDay, maxdate = maxdate1)
     cal.pack(pady = 20, fill = "both", expand = True)
-
-    timelbl = Label(tk)
-    timelbl.pack(pady = 10, anchor='center')
-    clock(timelbl)
 
     btn = Button(tk, text="Create Event", command = lambda: openForm(tk, api))
     btn.pack(pady = 10)
@@ -447,6 +476,7 @@ def create_ui(archive, api):
     btn.pack(pady = 10, anchor = 'w')
     
     tk.mainloop()
+    return 0
 
 def force_refresh(tk, archive, api):
     tk.destroy()
