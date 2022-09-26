@@ -1,4 +1,3 @@
-from asyncio import events
 import unittest
 from unittest.mock import MagicMock, Mock, patch
 import MyEventManager
